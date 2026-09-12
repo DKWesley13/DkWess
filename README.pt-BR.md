@@ -1,111 +1,113 @@
-<div align="center">
+# 🔐 DkWess SecureRepo v1.0.0 — Guia em Português
 
-# 🔐 DkWess SecureRepo
+SecureRepo é uma ferramenta Python local para auditoria defensiva de repositórios. Ela analisa governança, higiene do repositório, nomes/caminhos sensíveis, dependências e padrões de risco em GitHub Actions sem executar o código do projeto auditado.
 
-### Auditoria de segurança, governança e GitHub Actions orientada por evidências
+> **Regra central:** `PASS != SECURITY GUARANTEE`.
 
-![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
-![Versão](https://img.shields.io/badge/versão-0.0.3-orange)
-![Status](https://img.shields.io/badge/status-alpha-yellow)
+## 🚀 Instalação no Windows
 
-[English](README.md) · [Começar](#-começando-do-zero) · [Comandos](#-comandos-principais) · [Documentação](#-documentação)
-
-</div>
-
----
-
-O **DkWess SecureRepo** é uma ferramenta Python para fazer uma primeira auditoria estruturada de um repositório de software. Ele procura sinais de risco e registra **o que realmente foi analisado**.
-
-A regra mais importante é: **`PASS != SECURITY GUARANTEE`**.
-
-## 🎯 Para que serve?
-- 📘 documentação e governança;
-- 🧹 `.gitignore` e higiene;
-- 🔑 arquivos potencialmente sensíveis;
-- 📦 manifests e alguns lockfiles;
-- ⚙️ riscos comuns de GitHub Actions;
-- 📊 cobertura da auditoria;
-- 🧾 relatórios Markdown e JSON.
-
-## 🚀 Começando do zero
-
-### 1. Confirme Python 3.11+
-```powershell
-python --version
-```
-
-### 2. Clone
 ```powershell
 git clone https://github.com/DKWesley13/DkWess.git
 cd DkWess
-```
-
-### 3. Ambiente virtual no Windows
-```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e .
-```
-
-### 4. Confira
-```powershell
 dkwess-securerepo --version
+dkwess-securerepo .
 ```
 
-### 5. Audite
-```powershell
-dkwess-securerepo "C:\Projetos\MeuProjeto"
+## 🐧 Linux / macOS
+
+```bash
+git clone https://github.com/DKWesley13/DkWess.git
+cd DkWess
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+dkwess-securerepo .
 ```
 
-Relatórios:
-```text
-reports/audit.md
-reports/audit.json
-```
+Os relatórios padrão ficam em `reports/audit.json` e `reports/audit.md`.
 
-## 🧰 Comandos principais
-```powershell
+## 🧭 Para que serve
+
+- verificar arquivos de governança e documentação;
+- revisar `.gitignore` e descoberta do repositório;
+- sinalizar nomes/caminhos normalmente associados a credenciais sem imprimir o conteúdo secreto;
+- inventariar manifests e verificar alguns lockfiles;
+- revisar padrões de risco em workflows do GitHub Actions;
+- gerar evidências com severidade, confiança, fingerprint, assessment e coverage;
+- criar baseline de problemas conhecidos e detectar regressões novas;
+- gerar inventário de supply chain e evidência local de provenance;
+- exportar SARIF 2.1.0;
+- gerar inventário SBOM CycloneDX 1.5 de forma estática e best-effort;
+- aplicar política TOML/JSON;
+- avaliar readiness técnico da versão 1.
+
+## 🧪 Comandos úteis
+
+```bash
 dkwess-securerepo --list-checks
-dkwess-securerepo --explain SR-GHA-007
+dkwess-securerepo --explain SR-GHA-010
 dkwess-securerepo . --fail-on MEDIUM
 dkwess-securerepo . --require-full-coverage
-dkwess-securerepo . --no-reports --json-stdout
+dkwess-securerepo --show-limits
 ```
 
+### Baseline
+
+```bash
+dkwess-securerepo . --write-baseline .securerepo-baseline.json
+dkwess-securerepo . --compare-baseline .securerepo-baseline.json --fail-on HIGH --fail-on-new
+```
+
+Problemas já presentes continuam aparecendo no relatório. A baseline não transforma problema em `PASS`.
+
+### Supply chain + SARIF + SBOM
+
+```bash
+dkwess-securerepo . \
+  --supply-chain reports/supply-chain.json \
+  --provenance reports/provenance.json \
+  --sarif reports/securerepo.sarif \
+  --sbom reports/sbom.cdx.json
+```
+
+### Política
+
+```toml
+[policy]
+fail_on = "HIGH"
+require_full_coverage = false
+disabled_rules = []
+exclude_paths = []
+allow_critical_suppression = false
+```
+
+```bash
+dkwess-securerepo . --policy securerepo.toml
+```
+
+### Readiness da release
+
+```bash
+dkwess-securerepo . --release-check
+```
+
+O SecureRepo separa `technical_ready` de `open_source_reuse_ready`. Isso é proposital: um projeto pode estar tecnicamente estável e ainda não ter uma licença que autorize reutilização.
+
 ## 📊 Como interpretar
-| Estado | Significado |
-|---|---|
-| `PASS` | checks implementados terminaram sem findings |
-| `FAIL` | um ou mais findings |
-| `BLOCKED` | análise tentou executar mas não terminou |
-| `NOT_ASSESSED` | não há conclusão válida |
 
-| Cobertura | Significado |
-|---|---|
-| `FULL` | checks implementados terminaram |
-| `PARTIAL` | apenas parte terminou |
-| `UNKNOWN` | a ferramenta não afirma cobertura suficiente |
+`PASS`, `FAIL`, `BLOCKED` e `NOT_ASSESSED` descrevem o assessment. `FULL`, `PARTIAL` e `UNKNOWN` descrevem o alcance dos checks implementados. Nenhum desses estados significa garantia absoluta de segurança.
 
-## ⚙️ Melhorias da v0.0.3
-- GitHub Actions Analyzer V2;
-- contexto não confiável em shell;
-- `curl/wget | bash/sh`;
-- runners `self-hosted`;
-- Docker actions sem digest;
-- combinação crítica `pull_request_target` + código do PR;
-- lockfile Node.js e Go;
-- métricas e fingerprints;
-- `--list-checks`, `--explain`, `--json-stdout`, `--require-full-coverage`;
-- `action.yml` para integração no GitHub;
-- documentação e tutorial ampliados.
+## 🛡 Segurança do próprio scanner
+
+A API pública usa limites de pré-validação, não segue symlinks durante descoberta, não executa código do repositório auditado e mantém runtime somente com biblioteca padrão do Python. O CI do projeto roda em Linux, macOS e Windows.
 
 ## 📚 Documentação
-- [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md)
-- [`docs/USAGE.md`](docs/USAGE.md)
-- [`docs/GITHUB_ACTIONS.md`](docs/GITHUB_ACTIONS.md)
-- [`docs/AUDIT_METHODOLOGY.md`](docs/AUDIT_METHODOLOGY.md)
-- [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md)
-- [`docs/FAQ.md`](docs/FAQ.md)
+
+Comece por [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md) e [`docs/USAGE.md`](docs/USAGE.md). Depois consulte `CHECKS`, `BASELINES`, `SUPPLY_CHAIN`, `SARIF`, `SBOM`, `POLICY`, `HARDENING`, `THREAT_MODEL` e `V1_AUDIT` dentro de `docs/`.
 
 ## ⚖️ Licença
-A licença ainda precisa ser escolhida pelo mantenedor antes de tratarmos o projeto como open source plenamente reutilizável. Código público não substitui uma licença de software.
+
+A licença de software ainda não foi escolhida. O código está público, mas visibilidade pública por si só não concede permissão geral de reutilização ou redistribuição. A escolha da licença continua sendo uma decisão explícita do mantenedor.

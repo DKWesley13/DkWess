@@ -1,48 +1,70 @@
-# CLI usage
+# SecureRepo usage cookbook
 
-```text
-dkwess-securerepo [PATH] [OPTIONS]
-```
+## Basic audit
 
-Examples:
 ```bash
-dkwess-securerepo .
-dkwess-securerepo ../my-project
-dkwess-securerepo . --output build/security-audit
+dkwess-securerepo /path/to/repository
+```
+
+## CI threshold
+
+```bash
 dkwess-securerepo . --fail-on MEDIUM
+```
+
+## Strict implemented coverage
+
+```bash
 dkwess-securerepo . --require-full-coverage
-dkwess-securerepo . --no-reports --json-stdout
+```
+
+## Explain rules
+
+```bash
 dkwess-securerepo --list-checks
-dkwess-securerepo --explain SR-GHA-008
-dkwess-securerepo --version
+dkwess-securerepo --explain SR-GHA-010
 ```
 
-Windows:
-```powershell
-dkwess-securerepo "C:\Projects\my-project"
+## Known-finding regression gate
+
+```bash
+dkwess-securerepo . --write-baseline .securerepo-baseline.json
+dkwess-securerepo . --compare-baseline .securerepo-baseline.json --fail-on HIGH --fail-on-new
 ```
 
-## Severity thresholds
-`INFO`, `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
+## Policy
 
-A finding at or above `--fail-on` returns exit code 2.
+```bash
+dkwess-securerepo . --policy securerepo.toml
+```
 
-## Strict coverage
-`--require-full-coverage` returns exit code 3 if no finding threshold failed but any capability is `PARTIAL` or `UNKNOWN`.
+## Evidence bundle
 
-A repository with no GitHub Actions workflows normally has GitHub Actions `NOT_ASSESSED / UNKNOWN`, so strict coverage should only be enabled when that policy is appropriate.
+```bash
+dkwess-securerepo . \
+  --output reports \
+  --supply-chain reports/supply-chain.json \
+  --provenance reports/provenance.json \
+  --sarif reports/securerepo.sarif \
+  --sbom reports/sbom.cdx.json
+```
 
-## Suggested local workflow
-1. run default audit;
-2. read `reports/audit.md`;
-3. explain unfamiliar rules;
-4. fix or document accepted risk;
-5. rerun with a stricter threshold if appropriate.
+## Machine-readable stdout
 
-## Exit codes
-| Code | Meaning |
-|---:|---|
-| 0 | success under configured policy |
-| 1 | runtime/configuration error |
-| 2 | finding threshold reached |
-| 3 | full coverage required but not achieved |
+```bash
+dkwess-securerepo . --json-stdout --no-reports
+```
+
+## Resource bounds
+
+```bash
+dkwess-securerepo --show-limits
+```
+
+## v1 release-readiness check
+
+```bash
+dkwess-securerepo . --release-check
+```
+
+Exit codes: `0` selected gates passed, `1` runtime/config error, `2` severity threshold, `3` incomplete implemented coverage, `4` new baseline regression, `5` technical release-readiness blocker.

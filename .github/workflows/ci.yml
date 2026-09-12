@@ -32,7 +32,7 @@ jobs:
           git remote add origin "$SERVER_URL/$REPOSITORY.git"
           git fetch --no-tags --depth=1 origin "$REF"
           git checkout --detach FETCH_HEAD
-      - name: Compile and test
+      - name: Compile, test and self-audit
         shell: bash
         run: |
           set -euo pipefail
@@ -45,6 +45,7 @@ jobs:
           python -m dkwess_securerepo --list-checks >/dev/null
           python -m dkwess_securerepo --show-limits >/dev/null
           python -m dkwess_securerepo . --output reports --fail-on HIGH
+          python -m dkwess_securerepo . --no-reports --release-check
 
   test-windows:
     runs-on: windows-latest
@@ -59,7 +60,7 @@ jobs:
           git remote add origin "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY.git"
           git fetch --no-tags --depth=1 origin $env:GITHUB_REF
           git checkout --detach FETCH_HEAD
-      - name: Compile and test
+      - name: Compile, test and self-audit
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -72,3 +73,4 @@ jobs:
           python -m dkwess_securerepo --list-checks | Out-Null
           python -m dkwess_securerepo --show-limits | Out-Null
           python -m dkwess_securerepo . --output reports --fail-on HIGH
+          python -m dkwess_securerepo . --no-reports --release-check

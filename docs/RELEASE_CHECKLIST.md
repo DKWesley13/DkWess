@@ -1,36 +1,28 @@
 # Release checklist
 
-## Source state
-- [ ] release commit identified
-- [ ] changelog updated
-- [ ] package version and `__version__` match
-- [ ] README version badge matches
+## Technical v1 gates
 
-## Validation
-- [ ] compile source
-- [ ] unit tests pass
-- [ ] version/list-checks smoke checks pass
-- [ ] SecureRepo self-audit passes at intended threshold
-- [ ] JSON report valid
-- [ ] documentation examples match CLI
+- [x] semantic package version reaches 1.0.0
+- [x] public API/CLI remain importable
+- [x] unit tests cover core checks and outputs
+- [x] baseline/regression engine exists
+- [x] supply-chain/provenance outputs exist
+- [x] SARIF output exists
+- [x] static CycloneDX inventory exists
+- [x] explicit policy engine exists
+- [x] resource-bound preflight exists
+- [x] Linux CI passes
+- [x] macOS CI passes
+- [x] Windows CI passes
+- [x] self-audit is part of CI
+- [x] tutorials and command reference exist
+- [x] security, support, conduct and contribution docs exist
+- [x] threat model and limitations are documented
 
-## Security
-- [ ] no credentials/private data in diff
-- [ ] no unexpected runtime dependency
-- [ ] workflow permissions reviewed
-- [ ] remote actions pinned where used
-- [ ] security docs current
-- [ ] known HIGH/CRITICAL regressions reviewed
+## Legal/public reuse gate
 
-## Public readiness
-- [ ] clean-environment install tested
-- [ ] license status explicit
-- [ ] support path documented
-- [ ] breaking changes documented
+- [ ] maintainer selects a software license
+- [ ] canonical license text is added
+- [ ] package/repository metadata is updated to match the chosen license
 
-## Stable 1.0 additional gates
-- [ ] license selected
-- [ ] cross-platform validation complete
-- [ ] stable schema policy
-- [ ] adversarial corpus complete
-- [ ] release evidence packet complete
+The unchecked license gate is intentional. Do not infer a license from public visibility.

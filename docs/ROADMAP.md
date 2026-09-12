@@ -1,30 +1,24 @@
-# Roadmap
+# SecureRepo roadmap
 
-The maintainer requested the public incubation sequence to continue at `v0.0.3`.
+## Completed path to v1
 
-## ✅ v0.0.3 — Public usability + Analyzer V2
-Modular architecture, detailed tutorials, Portuguese README, rule explain/list CLI, JSON stdout, strict coverage, metrics, fingerprints, GitHub Actions Analyzer V2, Node/Go lockfile hygiene, composite GitHub Action, community templates, report schema v3.
+| Version | Milestone | Status |
+|---|---|---|
+| 0.0.3 | public UX + GitHub Actions Analyzer V2 | ✅ |
+| 0.0.4 | known-findings baseline + regression gate | ✅ |
+| 0.0.5 | supply-chain inventory + local provenance | ✅ |
+| 0.0.6 | SARIF 2.1.0 | ✅ |
+| 0.0.7 | static CycloneDX SBOM inventory | ✅ |
+| 0.0.8 | TOML/JSON policy engine | ✅ |
+| 0.0.9 | resource hardening + cross-platform CI | ✅ |
+| 1.0.0 | technically stable public-source API/CLI milestone | ✅ |
 
-## v0.0.4 — Known-findings baseline
-Baseline create/compare, new/unchanged/resolved classification, regression-only CI, no conversion of accepted known risk into PASS.
+## Separate legal gate
 
-## v0.0.5 — Supply chain + provenance
-Richer manifest/lockfile relationships, provenance records, upstream/fork drift metadata, install/build script inventory.
+A software license remains a maintainer decision. v1.0.0 technical stability does not by itself grant reuse rights. The project should not be described as fully open source until an explicit license is selected and added.
 
-## v0.0.6 — SARIF
-SARIF output, GitHub Code Scanning compatibility, rule mapping and line mapping validation.
+## Post-1.0 candidates
 
-## v0.0.7 — SBOM
-SBOM discovery/validation and carefully evaluated CycloneDX/SPDX support.
+Future work can deepen structural GitHub Actions parsing, broaden manifest ecosystems, support authoritative build-generated SBOM/provenance ingestion, add richer policy schemas, improve performance for very large monorepos, publish signed release artifacts, and integrate more CI providers.
 
-## v0.0.8 — Policy engine
-`.securerepo.yml`, explicit enable/disable policy, severity overrides with audit trail, coverage requirements.
-
-## v0.0.9 — Hardening
-Adversarial filesystem/workflow tests, performance limits, Windows/Linux/macOS matrix, packaging and documentation hardening.
-
-## v1.0.0 — Stable release
-License selected, stable report contract, compatibility policy, broad tests, cross-platform validation, no unresolved HIGH regression in self-audit, release evidence, clean-environment installation validation.
-
-### Version-history note
-An earlier development milestone used `0.2.0`. The project now follows the maintainer-requested `0.0.x` public incubation line beginning at `0.0.3`; this is numbering normalization before 1.0, not a claim about an externally published 0.2.0 package.
+Every future feature should preserve `PASS != SECURITY GUARANTEE`, explicit coverage, secret-safe reporting and non-execution of target repository code during ordinary scans.
