@@ -11,7 +11,15 @@ from .models import (
     ScanMetrics,
 )
 from .reporting import render_markdown, write_reports
-from .scanner import TOOL_VERSION, scan_repository
+from .scanner import scan_repository as _scan_repository
+from .version import VERSION as TOOL_VERSION
+
+
+def scan_repository(root):
+    result = _scan_repository(root)
+    result.tool_version = TOOL_VERSION
+    return result
+
 
 __all__ = [
     "ASSESSMENT_STATES",

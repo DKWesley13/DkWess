@@ -8,28 +8,26 @@ import sys
 from . import __version__
 from .baseline import compare_baseline, load_baseline, write_baseline
 from .core import SEVERITY_ORDER, scan_repository, write_reports
+from .provenance import write_provenance
 from .rules import get_rule, iter_rules
+from .supply_chain import write_supply_chain
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="dkwess-securerepo",
-        description=(
-            "Audit repository governance, sensitive filenames, dependency hygiene, and GitHub Actions risk patterns "
-            "with explicit evidence and coverage states."
-        ),
-    )
+    parser = argparse.ArgumentParser(prog="dkwess-securerepo", description="Evidence-oriented repository governance, supply-chain hygiene and GitHub Actions auditing.")
     parser.add_argument("path", nargs="?", default=".", help="Repository directory to scan (default: current directory).")
     parser.add_argument("--output", default="reports", help="Directory for audit.json and audit.md (default: reports).")
     parser.add_argument("--fail-on", choices=list(SEVERITY_ORDER), default="HIGH", help="Return exit code 2 if this severity or higher is found (default: HIGH).")
-    parser.add_argument("--require-full-coverage", action="store_true", help="Return exit code 3 when any capability coverage is PARTIAL or UNKNOWN and no finding threshold already failed.")
+    parser.add_argument("--require-full-coverage", action="store_true", help="Return exit code 3 when any capability coverage is PARTIAL or UNKNOWN.")
     parser.add_argument("--no-reports", action="store_true", help="Do not write audit.json/audit.md.")
     parser.add_argument("--json-stdout", action="store_true", help="Print JSON audit output to stdout.")
     parser.add_argument("--list-checks", action="store_true", help="List all built-in rule IDs and exit.")
     parser.add_argument("--explain", metavar="RULE_ID", help="Explain one built-in rule and exit.")
-    parser.add_argument("--write-baseline", metavar="FILE", help="Write the current finding fingerprints as a baseline JSON file.")
-    parser.add_argument("--compare-baseline", metavar="FILE", help="Compare current findings with a previously written baseline.")
-    parser.add_argument("--fail-on-new", action="store_true", help="With --compare-baseline, gate only new findings at --fail-on severity; exit 4 on regression.")
+    parser.add_argument("--write-baseline", metavar="FILE", help="Write current finding fingerprints as a baseline.")
+    parser.add_argument("--compare-baseline", metavar="FILE", help="Compare current findings with a baseline.")
+    parser.add_argument("--fail-on-new", action="store_true", help="With --compare-baseline, gate only new findings; exit 4 on regression.")
+    parser.add_argument("--supply-chain", metavar="FILE", help="Write a local static supply-chain inventory JSON file.")
+    parser.add_argument("--provenance", metavar="FILE", help="Write local Git/manifests provenance evidence JSON.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return parser
 
@@ -45,13 +43,7 @@ def _explain_rule(rule_id: str) -> int:
     if rule is None:
         print(f"Unknown SecureRepo rule: {rule_id}", file=sys.stderr)
         return 1
-    print(f"Rule: {rule.rule_id}")
-    print(f"Title: {rule.title}")
-    print(f"Category: {rule.category}")
-    print(f"Severity: {rule.severity}")
-    print(f"Default confidence: {rule.confidence}")
-    print(f"Description: {rule.description}")
-    print(f"Remediation: {rule.remediation}")
+    print(f"Rule: {rule.rule_id}\nTitle: {rule.title}\nCategory: {rule.category}\nSeverity: {rule.severity}\nDefault confidence: {rule.confidence}\nDescription: {rule.description}\nRemediation: {rule.remediation}")
     return 0
 
 
@@ -62,9 +54,8 @@ def _print_human_summary(result, report_paths: tuple[Path, Path] | None) -> None
     print(f"Status: {result.status}")
     print(f"Findings: {len(result.findings)}")
     print(" | ".join([f"CRITICAL: {counts['CRITICAL']}", f"HIGH: {counts['HIGH']}", f"MEDIUM: {counts['MEDIUM']}", f"LOW: {counts['LOW']}", f"INFO: {counts['INFO']}"]))
-    print("Discovery: " f"{metrics.files_discovered} files | {metrics.workflows_discovered} workflows | " f"{metrics.manifests_detected} manifests | {metrics.symlinks_skipped} symlinks skipped")
+    print(f"Discovery: {metrics.files_discovered} files | {metrics.workflows_discovered} workflows | {metrics.manifests_detected} manifests | {metrics.symlinks_skipped} symlinks skipped")
     print(f"Implemented capability coverage: {result.coverage_percent}%")
-    print("Capabilities:")
     for capability in result.capabilities:
         print(f"  {capability.capability}: {capability.assessment} / {capability.coverage} ({capability.finding_count} findings)")
     if report_paths:
@@ -72,36 +63,26 @@ def _print_human_summary(result, report_paths: tuple[Path, Path] | None) -> None
     print("PASS != SECURITY GUARANTEE")
 
 
-def _print_baseline(comparison) -> None:
-    print("Baseline regression comparison:")
-    print(f"  New: {len(comparison.new_findings)}")
-    print(f"  Resolved: {len(comparison.resolved_fingerprints)}")
-    print(f"  Unchanged: {len(comparison.unchanged_fingerprints)}")
-    for finding in comparison.new_findings:
-        print(f"  NEW {finding.severity:<8} {finding.check_id} {finding.path} :: {finding.title}")
-
-
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.list_checks:
-        _print_rules()
-        return 0
+        _print_rules(); return 0
     if args.explain:
         return _explain_rule(args.explain)
     if args.fail_on_new and not args.compare_baseline:
-        print("SecureRepo error: --fail-on-new requires --compare-baseline", file=sys.stderr)
-        return 1
+        print("SecureRepo error: --fail-on-new requires --compare-baseline", file=sys.stderr); return 1
     try:
         result = scan_repository(args.path)
-        report_paths: tuple[Path, Path] | None = None
-        if not args.no_reports:
-            report_paths = write_reports(result, args.output)
+        report_paths = None if args.no_reports else write_reports(result, args.output)
         if args.write_baseline:
             write_baseline(result, args.write_baseline)
         comparison = compare_baseline(result, load_baseline(args.compare_baseline)) if args.compare_baseline else None
+        if args.supply_chain:
+            write_supply_chain(args.path, result, args.supply_chain)
+        if args.provenance:
+            write_provenance(args.path, result, args.provenance)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
-        print(f"SecureRepo error: {exc}", file=sys.stderr)
-        return 1
+        print(f"SecureRepo error: {exc}", file=sys.stderr); return 1
     if args.json_stdout:
         payload: dict[str, object] = {"audit": result.as_dict()}
         if comparison is not None:
@@ -109,10 +90,12 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(payload, indent=2, sort_keys=True))
     else:
         _print_human_summary(result, report_paths)
-        if args.write_baseline:
-            print(f"Baseline written: {args.write_baseline}")
         if comparison is not None:
-            _print_baseline(comparison)
+            print(f"Baseline: {len(comparison.new_findings)} new | {len(comparison.resolved_fingerprints)} resolved | {len(comparison.unchanged_fingerprints)} unchanged")
+        if args.supply_chain:
+            print(f"Supply-chain inventory: {args.supply_chain}")
+        if args.provenance:
+            print(f"Provenance evidence: {args.provenance}")
     if args.fail_on_new and comparison is not None:
         if comparison.has_new_at_or_above(args.fail_on):
             return 4
