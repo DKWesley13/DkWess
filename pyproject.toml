@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dkwess-securerepo"
-version = "0.0.3"
+version = "0.0.4"
 description = "Evidence-oriented repository governance, supply-chain hygiene and GitHub Actions auditor"
 readme = "README.md"
 requires-python = ">=3.11"
