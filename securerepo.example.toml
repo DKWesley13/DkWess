@@ -1,0 +1,11 @@
+[policy]
+# Default is HIGH when omitted.
+fail_on = "HIGH"
+require_full_coverage = false
+
+# Suppressions are explicit and reported. Prefer fixing findings.
+disabled_rules = []
+exclude_paths = []
+
+# CRITICAL rules cannot be disabled unless this is deliberately set true.
+allow_critical_suppression = false
