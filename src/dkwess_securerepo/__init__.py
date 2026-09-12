@@ -4,24 +4,13 @@ from .baseline import BaselineComparison, compare_baseline, load_baseline, write
 from .core import AuditResult, CapabilityAssessment, Finding, ScanMetrics, scan_repository, write_reports
 from .provenance import provenance_payload, write_provenance
 from .sarif import sarif_payload, write_sarif
+from .sbom import sbom_payload, write_sbom
 from .supply_chain import supply_chain_payload, write_supply_chain
 from .version import VERSION as __version__
 
 __all__ = [
-    "AuditResult",
-    "BaselineComparison",
-    "CapabilityAssessment",
-    "Finding",
-    "ScanMetrics",
-    "compare_baseline",
-    "load_baseline",
-    "provenance_payload",
-    "sarif_payload",
-    "scan_repository",
-    "supply_chain_payload",
-    "write_baseline",
-    "write_provenance",
-    "write_reports",
-    "write_sarif",
-    "write_supply_chain",
+    "AuditResult", "BaselineComparison", "CapabilityAssessment", "Finding", "ScanMetrics",
+    "compare_baseline", "load_baseline", "provenance_payload", "sarif_payload", "sbom_payload",
+    "scan_repository", "supply_chain_payload", "write_baseline", "write_provenance", "write_reports",
+    "write_sarif", "write_sbom", "write_supply_chain",
 ]
