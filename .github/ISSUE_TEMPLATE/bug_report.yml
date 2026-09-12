@@ -1,0 +1,44 @@
+name: Bug report
+description: Report a reproducible SecureRepo defect
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: Please do not include credentials, private repository contents, customer data, or secret values.
+  - type: input
+    id: version
+    attributes:
+      label: SecureRepo version
+      placeholder: dkwess-securerepo 0.0.3
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal sanitized reproduction
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true

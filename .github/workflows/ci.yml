@@ -29,13 +29,29 @@ jobs:
           git fetch --no-tags --depth=1 origin "$REF"
           git checkout --detach FETCH_HEAD
 
+      - name: Verify Python and compile source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python --version
+          python -c 'import sys; assert sys.version_info >= (3, 11), sys.version'
+          python -m compileall -q src
+
       - name: Run unit tests
         shell: bash
         run: |
           set -euo pipefail
           export PYTHONPATH="$GITHUB_WORKSPACE/src"
-          python --version
           python -m unittest discover -s tests -v
+
+      - name: CLI smoke tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/src"
+          python -m dkwess_securerepo --version
+          python -m dkwess_securerepo --list-checks >/dev/null
+          python -m dkwess_securerepo --explain SR-GHA-010 >/dev/null
 
       - name: Self-audit repository
         shell: bash

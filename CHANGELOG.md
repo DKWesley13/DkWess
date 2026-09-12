@@ -1,44 +1,44 @@
 # Changelog
 
-All notable project changes are recorded here.
+## [0.0.3] - 2026-09-12
 
-## 0.2.0 - Evidence & Coverage Foundation
+### Public usability
+- normalized the maintainer-requested public incubation version line to `0.0.3`;
+- expanded README with installation, tutorials, command reference, architecture and project map;
+- added Portuguese README, support, conduct and community templates;
+- added a root composite `action.yml`.
 
-### Added
+### Scanner
+- modularized models, rules, scanner and reporting while preserving `core.py` compatibility;
+- added scan metrics and discovery-error evidence;
+- added credential-adjacent path review;
+- added Node.js and Go lockfile hygiene.
 
-- capability assessment model: `PASS`, `FAIL`, `BLOCKED`, `NOT_ASSESSED`;
-- coverage model: `FULL`, `PARTIAL`, `UNKNOWN`;
-- finding categories and confidence;
-- capability matrix in console, Markdown and JSON reports;
-- JSON report schema version 2;
-- architecture documentation and Mermaid system diagrams;
-- project mind map;
-- threat model;
-- staged roadmap to 1.0;
-- report-schema documentation;
-- explicit symlink skipping during recursive repository discovery;
-- tests for capability semantics and symlink behavior.
+### GitHub Actions Analyzer V2
+- self-hosted runner review;
+- selected untrusted-event-context shell interpolation detection;
+- selected curl/wget pipe-to-shell detection;
+- Docker action digest-pinning review;
+- CRITICAL review for `pull_request_target` combined with pull-request-head content references.
 
-### Changed
+### Evidence and CLI
+- report schema v3;
+- stable finding fingerprints;
+- `--list-checks`, `--explain`, `--json-stdout`, `--require-full-coverage`;
+- version and scan metrics in reports/console.
 
-- dependency inventory no longer implies coverage when no recognized manifest exists;
-- GitHub Actions capability reports `NOT_ASSESSED / UNKNOWN` when no supported workflow exists;
-- unreadable workflows can reduce GitHub Actions coverage to `PARTIAL`;
-- public project version advanced to `0.2.0`.
+### Testing
+- expanded unit tests and CI smoke checks.
 
-### Security
+### Known limitation
+- software license selection remains pending and is the legal/public-reuse blocker before calling the project fully open source.
 
-- maintained the no-secret-echo invariant for sensitive filename checks;
-- documented repository input as untrusted data;
-- documented parser and resource-limit gaps still requiring hardening.
+## [development milestone 0.2.0] - 2026-09-12
+- evidence and coverage states;
+- finding confidence/categories;
+- report schema v2;
+- architecture, threat model and roadmap;
+- README redesign.
 
-## 0.1.0 - Initial public foundation
-
-- repository governance scanner;
-- GitHub Actions hygiene checks;
-- sensitive filename checks;
-- dependency manifest inventory;
-- Markdown/JSON reports;
-- unit tests;
-- CI self-audit;
-- SECURITY and CONTRIBUTING policies.
+## [initial foundation] - 2026-09-12
+- first functional scanner, reports, tests and CI.

@@ -1,108 +1,27 @@
-# Report Schema
+# Report schema v3
 
-## Version
+SecureRepo v0.0.3 writes JSON schema version `3`.
 
-SecureRepo `0.2.0` emits JSON report schema version `2`.
+Top-level fields include `schema_version`, `tool`, `tool_version`, `root`, `status`, `security_guarantee`, `statement`, severity counts, coverage counts, `coverage_percent`, scan `metrics`, `manifests`, `capabilities`, and `findings`.
 
-Schema versioning is separate from package versioning. A breaking report-contract change requires a schema-version increment.
+A finding includes `check_id`, `severity`, `title`, `path`, `detail`, `remediation`, `category`, `confidence`, and a short stable `fingerprint`.
 
-## Top-level document
-
+Example:
 ```json
 {
-  "schema_version": 2,
-  "tool": "DkWess SecureRepo",
-  "root": "/path/to/repository",
-  "status": "REVIEW_REQUIRED",
-  "security_guarantee": false,
-  "statement": "PASS != SECURITY GUARANTEE",
-  "counts": {
-    "CRITICAL": 0,
-    "HIGH": 0,
-    "MEDIUM": 1,
-    "LOW": 0,
-    "INFO": 0
-  },
-  "coverage_counts": {
-    "FULL": 4,
-    "PARTIAL": 0,
-    "UNKNOWN": 1
-  },
-  "manifests": ["pyproject.toml"],
-  "capabilities": [],
-  "findings": []
-}
-```
-
-## Finding
-
-```json
-{
-  "check_id": "SR-GHA-005",
-  "severity": "MEDIUM",
-  "title": "Remote action is not pinned to a full commit SHA",
-  "path": ".github/workflows/ci.yml:12",
-  "detail": "Action `owner/action` uses mutable or non-SHA reference `v1`.",
-  "remediation": "Review the action source and pin it to an immutable 40-character commit SHA.",
+  "check_id": "SR-GHA-007",
+  "severity": "HIGH",
   "category": "github-actions",
-  "confidence": "HIGH"
+  "confidence": "HIGH",
+  "path": ".github/workflows/ci.yml:25",
+  "fingerprint": "0123456789abcdefabcd"
 }
 ```
 
-### Severity
+The fingerprint is SHA-256-derived from rule ID, evidence path and title. It is intended for future baseline comparison, not repository attestation.
 
-Allowed values:
+Capability objects contain `capability`, `assessment`, `coverage`, `finding_count`, and `notes`.
 
-`INFO`, `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
+Metrics contain `files_discovered`, `symlinks_skipped`, `discovery_errors`, `workflows_discovered`, and `manifests_detected`.
 
-### Confidence
-
-Allowed values:
-
-`LOW`, `MEDIUM`, `HIGH`.
-
-Confidence describes confidence in the **rule match**, not certainty of exploitability or business impact.
-
-## Capability assessment
-
-```json
-{
-  "capability": "GitHub Actions",
-  "assessment": "PASS",
-  "coverage": "FULL",
-  "finding_count": 0,
-  "notes": "Workflow files were inspected with conservative line-oriented heuristics."
-}
-```
-
-### Assessment
-
-- `PASS`
-- `FAIL`
-- `BLOCKED`
-- `NOT_ASSESSED`
-
-### Coverage
-
-- `FULL`
-- `PARTIAL`
-- `UNKNOWN`
-
-Assessment and coverage are separate dimensions.
-
-Examples:
-
-```text
-PASS / FULL
-FAIL / FULL
-BLOCKED / PARTIAL
-NOT_ASSESSED / UNKNOWN
-```
-
-## Compatibility rule
-
-Consumers should reject unsupported future schema versions rather than silently assuming backward compatibility.
-
-## Security semantics
-
-A report with `status: PASS` is not a security certification. It means the implemented checks did not produce findings for the assessed snapshot and capability coverage is reported separately.
+Before 1.0, consumers should check `schema_version`; report evolution may occur between incubation releases.
