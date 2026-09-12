@@ -1,0 +1,48 @@
+name: DkWess SecureRepo
+description: Evidence-oriented repository governance and GitHub Actions audit
+branding:
+  icon: shield
+  color: blue
+inputs:
+  path:
+    description: Repository path to audit
+    required: false
+    default: .
+  output:
+    description: Directory where audit.md and audit.json are written
+    required: false
+    default: reports
+  fail-on:
+    description: Severity threshold that returns exit code 2
+    required: false
+    default: HIGH
+  require-full-coverage:
+    description: Return exit code 3 if any capability is PARTIAL or UNKNOWN
+    required: false
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - name: Run SecureRepo
+      shell: bash
+      env:
+        SECUREREPO_PATH: ${{ inputs.path }}
+        SECUREREPO_OUTPUT: ${{ inputs.output }}
+        SECUREREPO_FAIL_ON: ${{ inputs.fail-on }}
+        SECUREREPO_REQUIRE_FULL_COVERAGE: ${{ inputs.require-full-coverage }}
+      run: |
+        set -euo pipefail
+        case "$SECUREREPO_FAIL_ON" in
+          INFO|LOW|MEDIUM|HIGH|CRITICAL) ;;
+          *) echo "Invalid fail-on value: $SECUREREPO_FAIL_ON" >&2; exit 1 ;;
+        esac
+        case "$SECUREREPO_REQUIRE_FULL_COVERAGE" in
+          true|false) ;;
+          *) echo "require-full-coverage must be true or false" >&2; exit 1 ;;
+        esac
+        export PYTHONPATH="$GITHUB_ACTION_PATH/src${PYTHONPATH:+:$PYTHONPATH}"
+        args=("$SECUREREPO_PATH" --output "$SECUREREPO_OUTPUT" --fail-on "$SECUREREPO_FAIL_ON")
+        if [[ "$SECUREREPO_REQUIRE_FULL_COVERAGE" == "true" ]]; then
+          args+=(--require-full-coverage)
+        fi
+        python -m dkwess_securerepo "${args[@]}"

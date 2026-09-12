@@ -1,92 +1,55 @@
-# SecureRepo checks
+# Built-in checks — v0.0.3
 
-This document describes the V0.2 checks implemented by DkWess SecureRepo. The scanner is intentionally narrow and evidence-oriented.
+Live catalog:
+```bash
+dkwess-securerepo --list-checks
+dkwess-securerepo --explain SR-GHA-010
+```
 
-Every finding now includes a **category** and **confidence**, and the report contains a separate capability matrix with **assessment** and **coverage** states.
-
-## Documentation and governance
-
-| ID | Severity | Category | What it checks |
-|---|---:|---|---|
-| `SR-DOC-001` | MEDIUM | governance | `README.md` exists |
-| `SR-DOC-002` | LOW | governance | `SECURITY.md` exists |
-| `SR-DOC-003` | LOW | governance | `CONTRIBUTING.md` exists |
-| `SR-DOC-004` | MEDIUM | governance | a common software license filename exists |
-
-The tool checks presence only. It does not decide whether legal text is correct for a jurisdiction or project.
+## Governance
+| Rule | Severity | Purpose |
+|---|---|---|
+| `SR-DOC-001` | MEDIUM | README presence |
+| `SR-DOC-002` | LOW | SECURITY presence |
+| `SR-DOC-003` | LOW | CONTRIBUTING presence |
+| `SR-DOC-004` | MEDIUM | license file presence |
 
 ## Repository hygiene
+| Rule | Severity | Purpose |
+|---|---|---|
+| `SR-REP-001` | MEDIUM | `.gitignore` missing |
+| `SR-REP-002` | LOW | `.gitignore` unreadable |
+| `SR-REP-003` | LOW | basic ignore coverage incomplete |
+| `SR-REP-004` | LOW | recursive discovery incomplete |
 
-| ID | Severity | Category | What it checks |
-|---|---:|---|---|
-| `SR-REP-001` | MEDIUM | repository-hygiene | `.gitignore` exists |
-| `SR-REP-002` | LOW | repository-hygiene | `.gitignore` can be read |
-| `SR-REP-003` | LOW | repository-hygiene | basic ignore coverage for environment files, Python cache and report output |
+## Sensitive files
+| Rule | Severity | Purpose |
+|---|---|---|
+| `SR-SEC-001` | HIGH | secret/key-associated filename or extension |
+| `SR-SEC-002` | MEDIUM | credential-adjacent configuration path |
 
-`.gitignore` evaluation is heuristic. Valid alternative layouts may not be recognized by V0.2.
+These checks do not read or print matched file contents.
 
-## Potentially sensitive filenames
+## Dependency inventory
+| Rule | Severity | Purpose |
+|---|---|---|
+| `SR-SC-001` | INFO | no recognized manifest |
+| `SR-SC-002` | LOW | package.json without recognized lockfile |
+| `SR-SC-003` | LOW | go.mod without go.sum |
 
-`SR-SEC-001` is HIGH when the repository tree contains names/extensions commonly associated with secrets or private-key material, including `.env`, `credentials.json`, `secrets.json`, `id_rsa`, `id_ed25519`, `.pem`, `.key`, `.p12`, `.pfx`, and `.kdbx`.
+## GitHub Actions Analyzer V2
+| Rule | Severity | Purpose |
+|---|---|---|
+| `SR-GHA-000` | LOW | workflow unreadable |
+| `SR-GHA-001` | HIGH | `pull_request_target` review |
+| `SR-GHA-002` | HIGH | `permissions: write-all` |
+| `SR-GHA-003` | MEDIUM | `persist-credentials: true` |
+| `SR-GHA-004` | HIGH | remote action missing `@ref` |
+| `SR-GHA-005` | MEDIUM | action not pinned full SHA |
+| `SR-GHA-006` | MEDIUM | self-hosted runner boundary |
+| `SR-GHA-007` | HIGH | selected untrusted context in shell |
+| `SR-GHA-008` | HIGH | selected pipe-to-shell pattern |
+| `SR-GHA-009` | MEDIUM | Docker action not digest-pinned |
+| `SR-GHA-010` | CRITICAL | `pull_request_target` + PR-head content |
 
-The check **does not read file contents**. `.env.example` and `.env.sample` are explicitly treated as examples.
-
-The recursive walker skips symbolic links.
-
-A filename match is not proof that the file contains a real secret. Its confidence is intentionally `MEDIUM`.
-
-## Dependency manifests
-
-`SR-SC-001` is INFO when no supported dependency manifest is found. V0.2 recognizes common Python, Node.js, Go, Rust, Ruby, PHP, Maven and Gradle manifest/lockfile names.
-
-When no recognized manifest exists, the **Dependency Inventory capability is `NOT_ASSESSED / UNKNOWN`** rather than claiming a dependency-security PASS.
-
-V0.2 inventories manifests only. It does not query vulnerability databases, install packages, resolve dependency graphs, or access the network.
-
-## GitHub Actions
-
-| ID | Severity | Category | What it checks |
-|---|---:|---|---|
-| `SR-GHA-000` | LOW | github-actions | workflow file could not be read |
-| `SR-GHA-001` | HIGH | github-actions | `pull_request_target` trigger is present |
-| `SR-GHA-002` | HIGH | github-actions | `permissions: write-all` is present |
-| `SR-GHA-003` | MEDIUM | github-actions | `persist-credentials: true` is present |
-| `SR-GHA-004` | HIGH | github-actions | a remote `uses:` action has no `@ref` |
-| `SR-GHA-005` | MEDIUM | github-actions | a remote action is not pinned to a full 40-character commit SHA |
-
-The V0.2 workflow parser is conservative and line-oriented; it is **not a general YAML parser**. It can miss equivalent YAML constructs or produce findings that require context.
-
-If workflow files exist but one cannot be read, capability coverage becomes `PARTIAL` and assessment becomes `BLOCKED`.
-
-If no supported workflow files exist, the capability is `NOT_ASSESSED / UNKNOWN`.
-
-## Result semantics
-
-Top-level status remains intentionally simple:
-
-- `PASS`: no implemented check produced a finding and no capability is blocked;
-- `REVIEW_REQUIRED`: findings below HIGH exist and/or a capability is blocked;
-- `FAIL`: at least one HIGH or CRITICAL finding exists.
-
-Capability assessment is more precise:
-
-- `PASS`;
-- `FAIL`;
-- `BLOCKED`;
-- `NOT_ASSESSED`.
-
-Coverage:
-
-- `FULL`;
-- `PARTIAL`;
-- `UNKNOWN`.
-
-The CLI failure threshold is separately configurable through `--fail-on`.
-
-A status describes the scanner's implemented checks only:
-
-**`PASS != SECURITY GUARANTEE`**
-
-## Non-goals in V0.2
-
-SecureRepo V0.2 does not perform penetration testing, exploit validation, malware detection, secret-content scanning, SAST, dependency vulnerability lookup, license legal analysis, branch-protection verification, GitHub organization policy review, cloud configuration assessment, or automatic remediation.
+The analyzer is not a full YAML semantic interpreter and can miss aliases, indirection, generated/reusable workflows, API context and complex shell semantics.
