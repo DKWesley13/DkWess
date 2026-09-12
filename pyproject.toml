@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dkwess-securerepo"
+version = "0.1.0"
+description = "Evidence-oriented repository governance and GitHub Actions hygiene scanner"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{name = "DKWesley13"}]
+keywords = ["security", "github-actions", "repository", "governance", "supply-chain"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Security",
+]
+
+[project.scripts]
+dkwess-securerepo = "dkwess_securerepo.__main__:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
