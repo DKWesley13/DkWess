@@ -8,6 +8,7 @@ import sys
 from . import __version__
 from .baseline import compare_baseline, load_baseline, write_baseline
 from .core import SEVERITY_ORDER, scan_repository, write_reports
+from .hardening import describe_limits
 from .policy import PolicyConfig, apply_policy, load_policy
 from .provenance import write_provenance
 from .rules import get_rule, iter_rules
@@ -22,11 +23,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", default="reports")
     parser.add_argument("--fail-on", choices=list(SEVERITY_ORDER), default=None, help="Failure severity. CLI overrides policy; default HIGH.")
     parser.add_argument("--require-full-coverage", action="store_true")
-    parser.add_argument("--policy", metavar="FILE", help="Load SecureRepo TOML/JSON policy.")
+    parser.add_argument("--policy", metavar="FILE")
     parser.add_argument("--no-reports", action="store_true")
     parser.add_argument("--json-stdout", action="store_true")
     parser.add_argument("--list-checks", action="store_true")
     parser.add_argument("--explain", metavar="RULE_ID")
+    parser.add_argument("--show-limits", action="store_true", help="Show built-in resource bounds and exit.")
     parser.add_argument("--write-baseline", metavar="FILE")
     parser.add_argument("--compare-baseline", metavar="FILE")
     parser.add_argument("--fail-on-new", action="store_true")
@@ -57,7 +59,7 @@ def _print_human_summary(result, report_paths: tuple[Path, Path] | None, policy_
     print(f"Discovery: {metrics.files_discovered} files | {metrics.workflows_discovered} workflows | {metrics.manifests_detected} manifests | {metrics.symlinks_skipped} symlinks skipped")
     print(f"Implemented capability coverage: {result.coverage_percent}%")
     for capability in result.capabilities: print(f"  {capability.capability}: {capability.assessment} / {capability.coverage} ({capability.finding_count} findings)")
-    if policy_application is not None: print(f"Policy suppressions: {policy_application.suppressed_count} (still recorded by policy application metadata, not silently converted to secure)")
+    if policy_application is not None: print(f"Policy suppressions: {policy_application.suppressed_count}")
     if report_paths: print(f"Reports: {report_paths[0]}, {report_paths[1]}")
     print("PASS != SECURITY GUARANTEE")
 
@@ -66,6 +68,8 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.list_checks: _print_rules(); return 0
     if args.explain: return _explain_rule(args.explain)
+    if args.show_limits:
+        print(json.dumps(describe_limits(), indent=2, sort_keys=True)); return 0
     if args.fail_on_new and not args.compare_baseline: print("SecureRepo error: --fail-on-new requires --compare-baseline", file=sys.stderr); return 1
     try:
         policy = load_policy(args.policy) if args.policy else PolicyConfig()
