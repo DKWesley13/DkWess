@@ -2,364 +2,375 @@
 
 # 🔐 DkWess SecureRepo
 
-### Evidence-oriented repository security, governance and GitHub Actions auditing
+### Evidence-oriented repository security, governance, CI and supply-chain auditing
 
 [![SecureRepo CI](https://github.com/DKWesley13/DkWess/actions/workflows/ci.yml/badge.svg)](https://github.com/DKWesley13/DkWess/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.0.3-orange)
+![Version](https://img.shields.io/badge/version-1.0.0-brightgreen)
 ![Runtime](https://img.shields.io/badge/runtime-stdlib--only-success)
 ![Report schema](https://img.shields.io/badge/report%20schema-v3-blueviolet)
-![Status](https://img.shields.io/badge/status-alpha-yellow)
+![Platforms](https://img.shields.io/badge/CI-Linux%20%7C%20macOS%20%7C%20Windows-blue)
 ![License](https://img.shields.io/badge/license-pending-lightgrey)
 
 **`PASS != SECURITY GUARANTEE`**
 
-[🚀 Quick start](#-quick-start) · [🧭 What it does](#-what-it-does) · [🧰 Commands](#-command-reference) · [🏗 Architecture](#-architecture) · [📚 Docs](#-documentation) · [🇧🇷 Português](README.pt-BR.md)
+[🚀 Start](#-quick-start) · [🧭 Purpose](#-what-it-does) · [🧰 Commands](#-command-reference) · [📊 Evidence](#-evidence-model) · [🏗 Architecture](#-architecture) · [📚 Docs](#-documentation) · [🇧🇷 Português](README.pt-BR.md)
 
 </div>
 
 ---
 
-> [!NOTE]
-> SecureRepo is an early public project. It is designed to produce **reviewable evidence**, not to claim that a repository is completely secure.
+> [!IMPORTANT]
+> SecureRepo v1.0.0 is a **technically stable public-source milestone**. A software license has not yet been selected, so general reuse/redistribution permission is still a separate legal gate. See [License status](#%EF%B8%8F-license-status).
 
-**DkWess SecureRepo** is a local-first Python tool for developers, maintainers and teams who want a fast, transparent first-pass audit of a software repository.
+## ✨ What is SecureRepo?
 
-It currently reviews:
+**DkWess SecureRepo** is a local-first Python CLI/library that inspects a repository and produces reviewable security/governance evidence **without executing the target project's code**.
 
-- 📘 repository governance files;
-- 🧹 repository hygiene and `.gitignore` coverage;
-- 🔑 potentially sensitive filenames and credential-adjacent configuration;
-- 📦 dependency manifests and selected lockfile hygiene;
-- ⚙️ GitHub Actions workflow risk patterns;
-- 📊 assessment state, coverage state, severity and confidence;
-- 🧾 Markdown and JSON evidence reports.
+It is for maintainers, developers and teams that want a transparent first-pass answer to two different questions:
 
-SecureRepo is deliberately conservative: an area that was not meaningfully assessed should not silently become a green checkmark.
+1. **What did the implemented checks find?**
+2. **What did this version actually assess?**
 
-## 🌟 Why this project is different
-
-Many tools answer only: **“Did a rule trigger?”**
-
-SecureRepo also asks: **“What was actually assessed, and how complete was the implemented coverage?”**
-
-| Assessment | Meaning |
-|---|---|
-| `PASS` | Implemented checks completed without findings |
-| `FAIL` | One or more implemented checks produced findings |
-| `BLOCKED` | The scanner attempted the capability but could not complete it |
-| `NOT_ASSESSED` | No meaningful conclusion is made for that capability |
-
-| Coverage | Meaning |
-|---|---|
-| `FULL` | The implemented checks for the capability completed |
-| `PARTIAL` | Only part of the implemented checks completed |
-| `UNKNOWN` | SecureRepo does not claim meaningful coverage |
+That second question matters because “nothing triggered” is not the same as “everything is secure”.
 
 ## 🧭 What it does
 
-### 🛡️ Governance
-Checks for `README.md`, `SECURITY.md`, `CONTRIBUTING.md`, and a recognized license file.
+| Area | v1 capability |
+|---|---|
+| 📘 Governance | README, SECURITY, CONTRIBUTING and license-presence checks |
+| 🧹 Repository hygiene | `.gitignore`, discovery completeness, symlink-safe traversal |
+| 🔐 Sensitive paths | secret/key filenames and credential-adjacent configuration paths without echoing secret contents |
+| 📦 Dependency hygiene | common manifests plus selected Node.js/Go lockfile checks |
+| ⚙️ GitHub Actions | privileged triggers, broad permissions, persisted credentials, mutable actions, self-hosted runners, selected shell hazards and Docker pinning |
+| 🧾 Evidence | severity, confidence, stable fingerprints, scan metrics, assessment and coverage states |
+| 🧱 Baselines | known-finding snapshots and regression-only gates |
+| 🔗 Supply chain | local manifest/action inventory and credential-redacted Git provenance |
+| 🛰 SARIF | SARIF 2.1.0 export for code-scanning consumers |
+| 🧬 SBOM | best-effort CycloneDX 1.5 static dependency inventory |
+| 🧩 Policy | TOML/JSON thresholds, coverage requirements and explicit suppressions |
+| 🛡 Hardening | file/workflow resource bounds and cross-platform CI |
+| ✅ Release readiness | separate technical-readiness and license/reuse gates |
 
-### 🧹 Repository hygiene
-Reviews `.gitignore`, discovery completeness, and skips symbolic links during recursive discovery.
+### What it does **not** claim
 
-### 🔐 Sensitive filenames
-Looks for filenames and paths commonly associated with secrets, key material, package-manager credentials, cloud credentials and similar configuration.
-
-> [!IMPORTANT]
-> The filename/path checks **do not read or print secret contents**.
-
-### 📦 Dependency hygiene
-Inventories common Python, Node.js, Go, Rust, Ruby, PHP, Maven and Gradle manifests. Version `0.0.3` adds selected Node.js and Go lockfile checks.
-
-### ⚙️ GitHub Actions Analyzer V2
-Current checks include `pull_request_target`, `permissions: write-all`, persisted checkout credentials, mutable action references, self-hosted runners, selected shell-injection context patterns, selected remote pipe-to-shell patterns, Docker action digest pinning, and dangerous `pull_request_target` + pull-request-head combinations.
+SecureRepo is not a penetration-testing engine, malware detector, complete secret-content scanner, full SAST engine, online vulnerability database client, legal-license analyzer or proof that software is secure. Unsupported or unassessed areas stay explicit.
 
 ## 🚀 Quick start
 
 ### Requirements
-- Python **3.11 or newer**
-- Git recommended
-- no third-party Python package required at runtime
 
-### 1. Clone
-```bash
+- Python **3.11+**
+- Git recommended
+- Windows, Linux or macOS
+- no third-party Python runtime package required
+
+### Windows PowerShell
+
+```powershell
 git clone https://github.com/DKWesley13/DkWess.git
 cd DkWess
-```
-
-### 2. Install
-
-#### Windows PowerShell
-```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e .
-```
-
-#### Linux / macOS
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e .
-```
-
-### 3. Confirm
-```bash
 dkwess-securerepo --version
-```
-
-Expected:
-```text
-dkwess-securerepo 0.0.3
-```
-
-### 4. Audit
-```bash
 dkwess-securerepo .
 ```
 
-Windows example:
-```powershell
-dkwess-securerepo "C:\Projects\my-app"
+### Linux / macOS
+
+```bash
+git clone https://github.com/DKWesley13/DkWess.git
+cd DkWess
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+dkwess-securerepo --version
+dkwess-securerepo .
 ```
 
-Default reports:
+Expected version:
+
+```text
+dkwess-securerepo 1.0.0
+```
+
+Default evidence files:
+
 ```text
 reports/audit.json
 reports/audit.md
 ```
 
-## 🧪 First five commands to try
+## 🧪 A useful first session
+
 ```bash
-dkwess-securerepo --version
+# See available rules
 dkwess-securerepo --list-checks
-dkwess-securerepo --explain SR-GHA-007
-dkwess-securerepo .
+
+# Understand one rule
+dkwess-securerepo --explain SR-GHA-010
+
+# Audit a repository
+dkwess-securerepo /path/to/repository
+
+# Fail CI at MEDIUM+
 dkwess-securerepo . --fail-on MEDIUM
+
+# Require all implemented capabilities to be fully assessable
+dkwess-securerepo . --require-full-coverage
+
+# See scanner resource bounds
+dkwess-securerepo --show-limits
+```
+
+## 🧱 Baseline + regression workflow
+
+A baseline records known findings; it **does not turn them into PASS**.
+
+```bash
+# First reviewed snapshot
+dkwess-securerepo . --write-baseline .securerepo-baseline.json
+
+# Later: show new/resolved/unchanged
+dkwess-securerepo . --compare-baseline .securerepo-baseline.json
+
+# CI gate only on new HIGH+ findings
+dkwess-securerepo . \
+  --compare-baseline .securerepo-baseline.json \
+  --fail-on HIGH \
+  --fail-on-new
+```
+
+Regression exit code is `4`.
+
+## 🔗 Supply-chain, provenance, SARIF and SBOM
+
+```bash
+dkwess-securerepo . \
+  --supply-chain reports/supply-chain.json \
+  --provenance reports/provenance.json \
+  --sarif reports/securerepo.sarif \
+  --sbom reports/sbom.cdx.json
+```
+
+These are **local static evidence outputs**. SecureRepo does not silently upload them or query external vulnerability services.
+
+## 🧩 Policy engine
+
+Create `securerepo.toml`:
+
+```toml
+[policy]
+fail_on = "HIGH"
+require_full_coverage = false
+
+disabled_rules = []
+exclude_paths = []
+allow_critical_suppression = false
+```
+
+Run:
+
+```bash
+dkwess-securerepo . --policy securerepo.toml
+```
+
+Suppressions are explicitly counted. CRITICAL rules cannot be disabled unless the policy deliberately enables `allow_critical_suppression = true`.
+
+## ✅ Release readiness
+
+```bash
+dkwess-securerepo . --release-check
+```
+
+The check separates:
+
+- **technical readiness**: version, required public documentation, no non-license findings, implemented capabilities fully covered;
+- **open-source reuse readiness**: technical readiness **plus an explicit license file**.
+
+This repository can therefore report `technical_ready: true` while correctly reporting `open_source_reuse_ready: false` until the maintainer selects a license.
+
+## 📊 Evidence model
+
+### Assessment
+
+| State | Meaning |
+|---|---|
+| `PASS` | implemented checks completed without findings |
+| `FAIL` | one or more implemented checks produced findings |
+| `BLOCKED` | the scanner attempted the capability but could not complete it |
+| `NOT_ASSESSED` | no meaningful conclusion is made |
+
+### Coverage
+
+| State | Meaning |
+|---|---|
+| `FULL` | implemented checks for the capability completed |
+| `PARTIAL` | only part of implemented coverage completed |
+| `UNKNOWN` | SecureRepo does not claim meaningful coverage |
+
+Every finding carries a stable rule ID, severity, confidence, category, path, remediation and short fingerprint.
+
+## ⚙️ GitHub Actions Analyzer
+
+Built-in rules currently cover:
+
+- `pull_request_target` review;
+- `permissions: write-all`;
+- checkout `persist-credentials: true`;
+- remote actions with no reference;
+- remote actions not pinned to a full 40-character SHA;
+- self-hosted runner review;
+- selected user-controlled GitHub contexts interpolated directly into shell commands;
+- selected `curl`/`wget` pipe-to-shell patterns;
+- Docker actions without `sha256` digest pinning;
+- CRITICAL `pull_request_target` + pull-request-head-content combinations.
+
+Use `--list-checks` and `--explain RULE_ID` for the authoritative built-in catalog.
+
+## 🏗 Architecture
+
+```mermaid
+flowchart LR
+    R[Repository] --> P[Preflight limits]
+    P --> D[Safe discovery]
+    D --> G[Governance]
+    D --> H[Repository hygiene]
+    D --> S[Sensitive paths]
+    D --> DEP[Dependency hygiene]
+    D --> A[GitHub Actions analyzer]
+
+    G --> E[Evidence engine]
+    H --> E
+    S --> E
+    DEP --> E
+    A --> E
+
+    E --> J[JSON + Markdown]
+    E --> B[Baseline / regression]
+    E --> SARIF[SARIF 2.1.0]
+    E --> SC[Supply-chain inventory]
+    E --> PR[Provenance]
+    E --> SB[Static CycloneDX SBOM]
+
+    POL[Policy] --> E
+    E --> RR[Release readiness]
+```
+
+## 🧠 Project map
+
+```mermaid
+mindmap
+  root((SecureRepo v1))
+    Scan
+      Governance
+      Hygiene
+      Sensitive paths
+      Dependencies
+      GitHub Actions
+    Evidence
+      Severity
+      Confidence
+      Fingerprints
+      Assessment
+      Coverage
+      Metrics
+    CI adoption
+      Baselines
+      Regression gates
+      Policies
+      SARIF
+    Supply chain
+      Manifest inventory
+      External actions
+      Provenance
+      CycloneDX
+    Safety
+      No target code execution
+      No secret echo
+      Symlink avoidance
+      Resource bounds
+      Stdlib runtime
+    Community
+      Tutorials
+      Security policy
+      Contribution guide
+      Issue templates
+      Support guide
 ```
 
 ## 🧰 Command reference
 
 | Option | Purpose |
 |---|---|
-| `PATH` | repository to scan; defaults to `.` |
-| `--output DIR` | report directory; defaults to `reports` |
-| `--fail-on LEVEL` | exit `2` when a finding reaches the threshold |
-| `--require-full-coverage` | exit `3` if any capability is `PARTIAL` or `UNKNOWN` |
-| `--no-reports` | do not create report files |
-| `--json-stdout` | emit only JSON to stdout |
-| `--list-checks` | list all built-in rules |
-| `--explain RULE_ID` | explain one rule and remediation |
-| `--version` | show version |
+| `PATH` | repository to audit; default `.` |
+| `--output DIR` | write default Markdown/JSON reports |
+| `--fail-on LEVEL` | fail at selected severity |
+| `--require-full-coverage` | fail when implemented capability coverage is incomplete |
+| `--policy FILE` | TOML/JSON policy |
+| `--write-baseline FILE` | create known-findings snapshot |
+| `--compare-baseline FILE` | compare with snapshot |
+| `--fail-on-new` | gate only newly introduced findings |
+| `--supply-chain FILE` | component/action inventory |
+| `--provenance FILE` | local Git/manifests provenance |
+| `--sarif FILE` | SARIF 2.1.0 export |
+| `--sbom FILE` | CycloneDX 1.5 static inventory |
+| `--release-check` | evaluate v1 technical + license gates |
+| `--list-checks` | list rules |
+| `--explain ID` | explain rule |
+| `--show-limits` | show resource bounds |
+| `--json-stdout` | machine-readable stdout |
+| `--no-reports` | skip default audit files |
+| `--version` | show package version |
 
-Exit codes: `0` success under policy, `1` runtime/config error, `2` finding threshold reached, `3` strict coverage not achieved.
+Exit codes: `0` successful under selected gate, `1` runtime/config error, `2` finding threshold, `3` strict coverage, `4` baseline regression, `5` technical release-readiness blocker.
 
-## 🧭 Example output
-```text
-DkWess SecureRepo v0.0.3
-Status: REVIEW_REQUIRED
-Findings: 1
-CRITICAL: 0 | HIGH: 0 | MEDIUM: 1 | LOW: 0 | INFO: 0
-Discovery: 34 files | 1 workflows | 1 manifests | 0 symlinks skipped
-Implemented capability coverage: 100%
-Capabilities:
-  Governance: FAIL / FULL (1 findings)
-  Repository Hygiene: PASS / FULL (0 findings)
-  Sensitive Filenames: PASS / FULL (0 findings)
-  Dependency Inventory: PASS / FULL (0 findings)
-  GitHub Actions: PASS / FULL (0 findings)
-Reports: reports/audit.json, reports/audit.md
-PASS != SECURITY GUARANTEE
-```
+## 🛡 Hardening
 
-## 📊 Capabilities
+The public scan API performs a preflight with explicit limits before scanning. Recursive discovery does not follow symlinks. Current CI executes compilation, unit tests, CLI smoke tests and self-audit on **Ubuntu, macOS and Windows**.
 
-| Capability | v0.0.3 |
-|---|---|
-| Governance files | ✅ Available |
-| `.gitignore` hygiene | ✅ Available |
-| Symlink-safe discovery | ✅ Available |
-| Sensitive filename/path review | ✅ Available |
-| Dependency manifest inventory | ✅ Available |
-| Node/Go lockfile hygiene | ✅ Available |
-| GitHub Actions Analyzer V2 | ✅ Available |
-| Severity + confidence | ✅ Available |
-| Stable finding fingerprint | ✅ Available |
-| Assessment + coverage state | ✅ Available |
-| Scan metrics | ✅ Available |
-| Markdown + JSON schema v3 | ✅ Available |
-| GitHub composite action | ✅ Available |
-| Known-findings baseline | 🛠 Planned |
-| SARIF / Code Scanning | 🛠 Planned |
-| SBOM | 🛠 Planned |
-| Provenance / upstream drift | 🛠 Planned |
-| Policy engine | 🛠 Planned |
-
-## 🤖 GitHub Actions
-This repository contains a root `action.yml`. For security, pin external actions to reviewed **full commit SHAs** rather than mutable branches/tags.
-
-```yaml
-permissions:
-  contents: read
-
-steps:
-  - uses: actions/checkout@<FULL_COMMIT_SHA>
-    with:
-      persist-credentials: false
-
-  - name: Audit repository with SecureRepo
-    uses: DKWesley13/DkWess@<FULL_SECURE_REPO_COMMIT_SHA>
-    with:
-      path: .
-      fail-on: HIGH
-      output: reports
-```
-
-See [`docs/GITHUB_ACTIONS.md`](docs/GITHUB_ACTIONS.md).
-
-## 🔎 Understand a finding
-```bash
-dkwess-securerepo --explain SR-GHA-007
-```
-Each JSON finding includes a stable short fingerprint designed for the future baseline engine.
-
-## 🏗 Architecture
-```mermaid
-flowchart LR
-    A[Repository] --> B[Safe Discovery]
-    B --> C[Governance]
-    B --> D[Repository Hygiene]
-    B --> E[Sensitive Files]
-    B --> F[Dependency Hygiene]
-    B --> G[GitHub Actions Analyzer]
-    C --> H[Evidence Engine]
-    D --> H
-    E --> H
-    F --> H
-    G --> H
-    H --> I[Assessment]
-    H --> J[Coverage]
-    H --> K[Severity + Confidence]
-    H --> L[Stable Fingerprints]
-    H --> M[Scan Metrics]
-    I --> N[Markdown]
-    J --> N
-    K --> N
-    L --> O[JSON schema v3]
-    M --> O
-```
-
-## 🧠 Project mind map
-```mermaid
-mindmap
-  root((DkWess SecureRepo))
-    User Experience
-      CLI
-      Tutorials
-      Rule explanations
-      Reports
-      GitHub Action
-    Scanner
-      Governance
-      Repository hygiene
-      Sensitive files
-      Dependency hygiene
-      GitHub Actions
-    Evidence Engine
-      Assessment
-      Coverage
-      Severity
-      Confidence
-      Fingerprints
-      Metrics
-    Safety
-      Read only scan
-      No secret echo
-      Symlink avoidance
-      Minimal dependencies
-      Explicit unknown states
-    Future
-      Baselines
-      SARIF
-      SBOM
-      Provenance
-      Policy engine
-      Release proof
-```
-
-## 📄 Report schema
-Schema v3 adds tool version, scan metrics, coverage percent and stable finding fingerprints. See [`docs/REPORT_SCHEMA.md`](docs/REPORT_SCHEMA.md).
-
-## 🧪 Development
-```bash
-python -m compileall -q src
-PYTHONPATH=src python -m unittest discover -s tests -v
-PYTHONPATH=src python -m dkwess_securerepo --version
-PYTHONPATH=src python -m dkwess_securerepo --list-checks
-PYTHONPATH=src python -m dkwess_securerepo . --output reports --fail-on HIGH
-```
+See [`docs/HARDENING.md`](docs/HARDENING.md) and [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md).
 
 ## 📚 Documentation
 
-| Document | Purpose |
+| Guide | Purpose |
 |---|---|
-| [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md) | complete installation + first audit |
-| [`docs/USAGE.md`](docs/USAGE.md) | CLI recipes |
-| [`docs/GITHUB_ACTIONS.md`](docs/GITHUB_ACTIONS.md) | CI integration |
-| [`docs/AUDIT_METHODOLOGY.md`](docs/AUDIT_METHODOLOGY.md) | evidence methodology |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | design and trust boundaries |
-| [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md) | visual project map |
-| [`docs/CHECKS.md`](docs/CHECKS.md) | rule catalog |
-| [`docs/REPORT_SCHEMA.md`](docs/REPORT_SCHEMA.md) | report contract |
-| [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) | threat model |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | staged plan |
-| [`docs/FAQ.md`](docs/FAQ.md) | troubleshooting |
-| [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) | release gates |
-| [`SECURITY.md`](SECURITY.md) | vulnerability reporting |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | contributor workflow |
-| [`SUPPORT.md`](SUPPORT.md) | help path |
+| [`GETTING_STARTED`](docs/GETTING_STARTED.md) | install and first audit |
+| [`USAGE`](docs/USAGE.md) | practical CLI recipes |
+| [`CHECKS`](docs/CHECKS.md) | built-in rule catalog |
+| [`BASELINES`](docs/BASELINES.md) | regression workflow |
+| [`SUPPLY_CHAIN`](docs/SUPPLY_CHAIN.md) | inventory + provenance |
+| [`SARIF`](docs/SARIF.md) | SARIF export |
+| [`SBOM`](docs/SBOM.md) | CycloneDX inventory |
+| [`POLICY`](docs/POLICY.md) | policy engine |
+| [`ARCHITECTURE`](docs/ARCHITECTURE.md) | design / trust boundaries |
+| [`AUDIT_METHODOLOGY`](docs/AUDIT_METHODOLOGY.md) | evidence philosophy |
+| [`THREAT_MODEL`](docs/THREAT_MODEL.md) | threats and non-goals |
+| [`HARDENING`](docs/HARDENING.md) | resource bounds |
+| [`COMPATIBILITY`](docs/COMPATIBILITY.md) | platforms |
+| [`V1_AUDIT`](docs/V1_AUDIT.md) | v1 technical closure |
+| [`RELEASE_CHECKLIST`](docs/RELEASE_CHECKLIST.md) | release gates |
 
-## 🧩 Principles
-1. Evidence over claims.
-2. Unknown is not PASS.
-3. Coverage is explicit.
-4. Do not echo secret contents.
-5. Do not follow symlinks during recursive discovery.
-6. Read target repositories; write only reports.
-7. Prefer deterministic, explainable evidence.
-8. Keep runtime authority/dependencies small.
-9. Document limitations.
-10. `PASS != SECURITY GUARANTEE`.
-
-## 🗺 Road to 1.0
-```text
-0.0.3  Public usability + GitHub Actions Analyzer V2   ← current
-0.0.4  Known-findings baseline + regression gate
-0.0.5  Supply-chain + provenance
-0.0.6  SARIF + GitHub Code Scanning
-0.0.7  SBOM support
-0.0.8  Policy engine
-0.0.9  UX, packaging and adversarial hardening
-1.0.0  Audited stable public release
-```
-
-The earlier `0.2.0` repository milestone was development-phase numbering. `0.0.3` establishes the maintainer-requested public incubation sequence before 1.0.
+Community documents: [`CONTRIBUTING.md`](CONTRIBUTING.md), [`SECURITY.md`](SECURITY.md), [`SUPPORT.md`](SUPPORT.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
 ## 🤝 Contributing
-Read [`CONTRIBUTING.md`](CONTRIBUTING.md). New checks should include a stable ID, category, severity, confidence, evidence behavior, remediation, tests and documented limitations.
+
+New checks should have a stable rule ID, category, severity, confidence, evidence behavior, remediation, tests and documented limitations. Security reports should follow [`SECURITY.md`](SECURITY.md), not public exploit disclosure.
 
 ## ⚖️ License status
+
 A software license has **not yet been selected**.
 
 > [!WARNING]
-> Public visibility alone does not grant general reuse or redistribution rights. License selection remains the final legal/public-reuse blocker before calling the project fully open source.
+> Public visibility alone does not grant general reuse or redistribution rights. v1.0.0 marks technical/API stability, not completion of the legal open-source reuse gate. The maintainer must explicitly choose a license before this project should be described as fully open source and generally reusable under license terms.
 
 ---
 
 <div align="center">
 
 ### 🔎 Measure what was assessed. Never hide what was not.
+
+**DkWess SecureRepo v1.0.0**
 
 </div>

@@ -11,9 +11,13 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+  test-unix:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
     steps:
       - name: Checkout exact GitHub ref without third-party actions
         shell: bash
@@ -28,34 +32,45 @@ jobs:
           git remote add origin "$SERVER_URL/$REPOSITORY.git"
           git fetch --no-tags --depth=1 origin "$REF"
           git checkout --detach FETCH_HEAD
-
-      - name: Verify Python and compile source
+      - name: Compile, test and self-audit
         shell: bash
         run: |
           set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/src"
           python --version
           python -c 'import sys; assert sys.version_info >= (3, 11), sys.version'
           python -m compileall -q src
-
-      - name: Run unit tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          export PYTHONPATH="$GITHUB_WORKSPACE/src"
           python -m unittest discover -s tests -v
-
-      - name: CLI smoke tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          export PYTHONPATH="$GITHUB_WORKSPACE/src"
           python -m dkwess_securerepo --version
           python -m dkwess_securerepo --list-checks >/dev/null
-          python -m dkwess_securerepo --explain SR-GHA-010 >/dev/null
-
-      - name: Self-audit repository
-        shell: bash
-        run: |
-          set -euo pipefail
-          export PYTHONPATH="$GITHUB_WORKSPACE/src"
+          python -m dkwess_securerepo --show-limits >/dev/null
           python -m dkwess_securerepo . --output reports --fail-on HIGH
+          python -m dkwess_securerepo . --no-reports --release-check
+
+  test-windows:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout exact GitHub ref without third-party actions
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          Set-Location $env:GITHUB_WORKSPACE
+          git init .
+          git remote add origin "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY.git"
+          git fetch --no-tags --depth=1 origin $env:GITHUB_REF
+          git checkout --detach FETCH_HEAD
+      - name: Compile, test and self-audit
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $env:PYTHONPATH = Join-Path $env:GITHUB_WORKSPACE "src"
+          python --version
+          python -c "import sys; assert sys.version_info >= (3, 11), sys.version"
+          python -m compileall -q src
+          python -m unittest discover -s tests -v
+          python -m dkwess_securerepo --version
+          python -m dkwess_securerepo --list-checks | Out-Null
+          python -m dkwess_securerepo --show-limits | Out-Null
+          python -m dkwess_securerepo . --output reports --fail-on HIGH
+          python -m dkwess_securerepo . --no-reports --release-check

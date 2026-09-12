@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dkwess-securerepo"
-version = "0.0.3"
+version = "1.0.0"
 description = "Evidence-oriented repository governance, supply-chain hygiene and GitHub Actions auditor"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{name = "DKWesley13"}]
-keywords = ["security", "github-actions", "repository", "governance", "supply-chain", "audit", "ci"]
+keywords = ["security", "github-actions", "repository", "governance", "supply-chain", "audit", "ci", "provenance", "sarif", "sbom", "policy"]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 5 - Production/Stable",
   "Environment :: Console",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",

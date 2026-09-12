@@ -9,7 +9,7 @@ from typing import Iterable
 from .models import AuditResult, CapabilityAssessment, Finding, ScanMetrics, SEVERITY_ORDER
 from .rules import make_finding
 
-TOOL_VERSION = "0.0.3"
+TOOL_VERSION = "0.0.4"
 
 IGNORED_DIRS = {".git", ".hg", ".svn", ".venv", "venv", "node_modules", "__pycache__", "reports", "dist", "build"}
 SENSITIVE_EXACT = {".env", "credentials.json", "secrets.json", "id_rsa", "id_ed25519"}

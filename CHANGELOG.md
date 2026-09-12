@@ -1,44 +1,51 @@
 # Changelog
 
-## [0.0.3] - 2026-09-12
+## 1.0.0
 
-### Public usability
-- normalized the maintainer-requested public incubation version line to `0.0.3`;
-- expanded README with installation, tutorials, command reference, architecture and project map;
-- added Portuguese README, support, conduct and community templates;
-- added a root composite `action.yml`.
+- technical/API stability milestone;
+- release-readiness gate separating technical status from license permission;
+- final public README and Portuguese guide;
+- completed documentation map and v1 audit closure;
+- cross-platform and hardening gates preserved.
 
-### Scanner
-- modularized models, rules, scanner and reporting while preserving `core.py` compatibility;
-- added scan metrics and discovery-error evidence;
-- added credential-adjacent path review;
-- added Node.js and Go lockfile hygiene.
+## 0.0.9
 
-### GitHub Actions Analyzer V2
-- self-hosted runner review;
-- selected untrusted-event-context shell interpolation detection;
-- selected curl/wget pipe-to-shell detection;
-- Docker action digest-pinning review;
-- CRITICAL review for `pull_request_target` combined with pull-request-head content references.
+- preflight resource limits;
+- oversized-workflow adversarial test;
+- Linux/macOS/Windows CI;
+- packaging/version test hardening.
 
-### Evidence and CLI
-- report schema v3;
-- stable finding fingerprints;
-- `--list-checks`, `--explain`, `--json-stdout`, `--require-full-coverage`;
-- version and scan metrics in reports/console.
+## 0.0.8
 
-### Testing
-- expanded unit tests and CI smoke checks.
+- TOML/JSON policy engine;
+- explicit suppressions and CRITICAL suppression guardrail.
 
-### Known limitation
-- software license selection remains pending and is the legal/public-reuse blocker before calling the project fully open source.
+## 0.0.7
 
-## [development milestone 0.2.0] - 2026-09-12
-- evidence and coverage states;
-- finding confidence/categories;
-- report schema v2;
-- architecture, threat model and roadmap;
-- README redesign.
+- best-effort CycloneDX 1.5 static dependency inventory.
 
-## [initial foundation] - 2026-09-12
-- first functional scanner, reports, tests and CI.
+## 0.0.6
+
+- SARIF 2.1.0 export with rule metadata, locations and fingerprints.
+
+## 0.0.5
+
+- static supply-chain component/action inventory;
+- credential-redacted local Git provenance.
+
+## 0.0.4
+
+- known-findings baseline snapshots;
+- new/resolved/unchanged comparison;
+- regression-only CI gate.
+
+## 0.0.3
+
+- public usability redesign;
+- GitHub Actions Analyzer V2;
+- modular evidence/reporting architecture;
+- schema v3, tutorials, community templates and composite GitHub Action.
+
+## Earlier development milestone
+
+The repository previously used `0.2.0` during development. The public incubation sequence was subsequently normalized to `0.0.3` through `0.0.9` before v1.0.0. Git history preserves that transition.
