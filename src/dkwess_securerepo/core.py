@@ -7,6 +7,9 @@ import re
 from typing import Iterable
 
 SEVERITY_ORDER = {"INFO": 0, "LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
+ASSESSMENT_STATES = {"PASS", "FAIL", "BLOCKED", "NOT_ASSESSED"}
+COVERAGE_STATES = {"FULL", "PARTIAL", "UNKNOWN"}
+CONFIDENCE_STATES = {"LOW", "MEDIUM", "HIGH"}
 
 
 @dataclass(frozen=True)
@@ -17,10 +20,33 @@ class Finding:
     path: str
     detail: str
     remediation: str
+    category: str = "general"
+    confidence: str = "HIGH"
 
     def __post_init__(self) -> None:
         if self.severity not in SEVERITY_ORDER:
             raise ValueError(f"Unsupported severity: {self.severity}")
+        if self.confidence not in CONFIDENCE_STATES:
+            raise ValueError(f"Unsupported confidence: {self.confidence}")
+        if not self.category:
+            raise ValueError("Finding category must not be empty")
+
+
+@dataclass(frozen=True)
+class CapabilityAssessment:
+    capability: str
+    assessment: str
+    coverage: str
+    finding_count: int
+    notes: str
+
+    def __post_init__(self) -> None:
+        if self.assessment not in ASSESSMENT_STATES:
+            raise ValueError(f"Unsupported assessment state: {self.assessment}")
+        if self.coverage not in COVERAGE_STATES:
+            raise ValueError(f"Unsupported coverage state: {self.coverage}")
+        if self.finding_count < 0:
+            raise ValueError("finding_count must be >= 0")
 
 
 @dataclass
@@ -28,6 +54,7 @@ class AuditResult:
     root: str
     findings: list[Finding]
     manifests: list[str]
+    capabilities: list[CapabilityAssessment]
 
     @property
     def counts(self) -> dict[str, int]:
@@ -37,9 +64,18 @@ class AuditResult:
         }
 
     @property
+    def coverage_counts(self) -> dict[str, int]:
+        return {
+            state: sum(1 for capability in self.capabilities if capability.coverage == state)
+            for state in ("FULL", "PARTIAL", "UNKNOWN")
+        }
+
+    @property
     def status(self) -> str:
         if any(SEVERITY_ORDER[f.severity] >= SEVERITY_ORDER["HIGH"] for f in self.findings):
             return "FAIL"
+        if any(cap.assessment == "BLOCKED" for cap in self.capabilities):
+            return "REVIEW_REQUIRED"
         if self.findings:
             return "REVIEW_REQUIRED"
         return "PASS"
@@ -52,14 +88,16 @@ class AuditResult:
 
     def as_dict(self) -> dict[str, object]:
         return {
-            "schema_version": 1,
+            "schema_version": 2,
             "tool": "DkWess SecureRepo",
             "root": self.root,
             "status": self.status,
             "security_guarantee": False,
             "statement": "PASS != SECURITY GUARANTEE",
             "counts": self.counts,
+            "coverage_counts": self.coverage_counts,
             "manifests": self.manifests,
+            "capabilities": [asdict(capability) for capability in self.capabilities],
             "findings": [asdict(finding) for finding in self.findings],
         }
 
@@ -126,6 +164,8 @@ def _walk_files(root: Path) -> Iterable[Path]:
             continue
         if any(part in IGNORED_DIRS for part in relative_parts):
             continue
+        if path.is_symlink():
+            continue
         if path.is_file():
             yield path
 
@@ -140,7 +180,15 @@ def _check_governance(root: Path) -> list[Finding]:
     for filename, check_id, severity, title, remediation in checks:
         if not (root / filename).is_file():
             findings.append(
-                Finding(check_id, severity, title, filename, f"Expected governance file `{filename}` was not found.", remediation)
+                Finding(
+                    check_id,
+                    severity,
+                    title,
+                    filename,
+                    f"Expected governance file `{filename}` was not found.",
+                    remediation,
+                    category="governance",
+                )
             )
 
     license_candidates = [
@@ -159,6 +207,7 @@ def _check_governance(root: Path) -> list[Finding]:
                 ".",
                 "Public source without an explicit license can be ambiguous for users and contributors.",
                 "Select an appropriate license and add the corresponding license file after maintainer/legal review.",
+                category="governance",
             )
         )
     return findings
@@ -175,6 +224,7 @@ def _check_gitignore(root: Path) -> list[Finding]:
                 ".gitignore",
                 "Generated files and local secrets are easier to commit accidentally without ignore rules.",
                 "Add a project-appropriate .gitignore and include local secret/config patterns.",
+                category="repository-hygiene",
             )
         ]
 
@@ -189,6 +239,8 @@ def _check_gitignore(root: Path) -> list[Finding]:
                 ".gitignore",
                 f"The file could not be read: {exc.__class__.__name__}.",
                 "Ensure .gitignore is readable by the audit process.",
+                category="repository-hygiene",
+                confidence="MEDIUM",
             )
         ]
 
@@ -209,6 +261,8 @@ def _check_gitignore(root: Path) -> list[Finding]:
             ".gitignore",
             "No matching ignore rule was detected for: " + ", ".join(missing) + ".",
             "Review .gitignore for local environment files, generated caches, and audit output.",
+            category="repository-hygiene",
+            confidence="MEDIUM",
         )
     ]
 
@@ -216,8 +270,7 @@ def _check_gitignore(root: Path) -> list[Finding]:
 def _check_sensitive_filenames(root: Path) -> list[Finding]:
     findings: list[Finding] = []
     for path in _walk_files(root):
-        name = path.name
-        lowered = name.lower()
+        lowered = path.name.lower()
         if lowered in SAFE_SENSITIVE_EXAMPLES:
             continue
         exact_match = lowered in SENSITIVE_EXACT
@@ -232,6 +285,8 @@ def _check_sensitive_filenames(root: Path) -> list[Finding]:
                 _relative(path, root),
                 "The filename or extension is commonly associated with credentials, private keys, or secret-bearing configuration. File contents were not read for this check.",
                 "Verify whether the file is safe to publish. If it contains secrets, remove it from version control and rotate affected credentials.",
+                category="sensitive-files",
+                confidence="MEDIUM",
             )
         )
     return findings
@@ -249,6 +304,8 @@ def _detect_manifests(root: Path) -> tuple[list[str], list[Finding]]:
             ".",
             "SecureRepo did not find a supported dependency manifest in the scanned tree.",
             "No action is required for repositories without dependencies; otherwise confirm the manifest format is supported.",
+            category="dependency-inventory",
+            confidence="MEDIUM",
         )
     ]
 
@@ -269,6 +326,7 @@ def _workflow_finding(
     line_number: int,
     detail: str,
     remediation: str,
+    confidence: str = "HIGH",
 ) -> Finding:
     return Finding(
         check_id,
@@ -277,6 +335,8 @@ def _workflow_finding(
         f"{_relative(workflow, root)}:{line_number}",
         detail,
         remediation,
+        category="github-actions",
+        confidence=confidence,
     )
 
 
@@ -301,6 +361,8 @@ def _check_github_actions(root: Path) -> list[Finding]:
                     _relative(workflow, root),
                     "The workflow could not be read.",
                     "Ensure the workflow is readable by the audit process.",
+                    category="github-actions",
+                    confidence="HIGH",
                 )
             )
             continue
@@ -384,6 +446,76 @@ def _check_github_actions(root: Path) -> list[Finding]:
     return findings
 
 
+def _capability(
+    name: str,
+    category: str,
+    findings: list[Finding],
+    *,
+    applicable: bool = True,
+    blocked: bool = False,
+    notes: str,
+) -> CapabilityAssessment:
+    category_findings = [finding for finding in findings if finding.category == category]
+    if not applicable:
+        return CapabilityAssessment(name, "NOT_ASSESSED", "UNKNOWN", len(category_findings), notes)
+    if blocked:
+        return CapabilityAssessment(name, "BLOCKED", "PARTIAL", len(category_findings), notes)
+    assessment = "FAIL" if category_findings else "PASS"
+    return CapabilityAssessment(name, assessment, "FULL", len(category_findings), notes)
+
+
+def _build_capabilities(root: Path, findings: list[Finding], manifests: list[str]) -> list[CapabilityAssessment]:
+    workflow_dir = root / ".github" / "workflows"
+    workflow_paths = []
+    if workflow_dir.is_dir():
+        workflow_paths = sorted(list(workflow_dir.glob("*.yml")) + list(workflow_dir.glob("*.yaml")))
+    workflow_unreadable = any(finding.check_id == "SR-GHA-000" for finding in findings)
+
+    return [
+        _capability(
+            "Governance",
+            "governance",
+            findings,
+            notes="Checks project documentation and license-file presence.",
+        ),
+        _capability(
+            "Repository Hygiene",
+            "repository-hygiene",
+            findings,
+            notes="Checks .gitignore coverage and basic repository hygiene.",
+        ),
+        _capability(
+            "Sensitive Filenames",
+            "sensitive-files",
+            findings,
+            notes="Filename/path heuristics only; file contents are not inspected by this capability.",
+        ),
+        _capability(
+            "Dependency Inventory",
+            "dependency-inventory",
+            findings,
+            applicable=bool(manifests),
+            notes=(
+                "Recognized dependency manifests were inventoried."
+                if manifests
+                else "No recognized dependency manifest was found; dependency security was not assessed."
+            ),
+        ),
+        _capability(
+            "GitHub Actions",
+            "github-actions",
+            findings,
+            applicable=bool(workflow_paths),
+            blocked=workflow_unreadable,
+            notes=(
+                "Workflow files were inspected with conservative line-oriented heuristics."
+                if workflow_paths
+                else "No supported GitHub Actions workflow files were found."
+            ),
+        ),
+    ]
+
+
 def scan_repository(root: str | Path) -> AuditResult:
     root_path = Path(root).expanduser().resolve()
     if not root_path.exists():
@@ -399,7 +531,8 @@ def scan_repository(root: str | Path) -> AuditResult:
     findings.extend(manifest_findings)
     findings.extend(_check_github_actions(root_path))
     findings.sort(key=lambda item: (-SEVERITY_ORDER[item.severity], item.check_id, item.path))
-    return AuditResult(str(root_path), findings, manifests)
+    capabilities = _build_capabilities(root_path, findings, manifests)
+    return AuditResult(str(root_path), findings, manifests, capabilities)
 
 
 def _markdown_escape(value: str) -> str:
@@ -408,6 +541,7 @@ def _markdown_escape(value: str) -> str:
 
 def render_markdown(result: AuditResult) -> str:
     counts = result.counts
+    coverage_counts = result.coverage_counts
     lines = [
         "# DkWess SecureRepo Audit",
         "",
@@ -424,10 +558,20 @@ def render_markdown(result: AuditResult) -> str:
         f"- Medium: {counts['MEDIUM']}",
         f"- Low: {counts['LOW']}",
         f"- Info: {counts['INFO']}",
+        f"- Coverage FULL/PARTIAL/UNKNOWN: {coverage_counts['FULL']}/{coverage_counts['PARTIAL']}/{coverage_counts['UNKNOWN']}",
         "",
-        "## Dependency manifests",
+        "## Capability matrix",
         "",
+        "| Capability | Assessment | Coverage | Findings | Notes |",
+        "|---|---|---|---:|---|",
     ]
+    for capability in result.capabilities:
+        lines.append(
+            f"| {_markdown_escape(capability.capability)} | `{capability.assessment}` | "
+            f"`{capability.coverage}` | {capability.finding_count} | {_markdown_escape(capability.notes)} |"
+        )
+
+    lines.extend(["", "## Dependency manifests", ""])
     if result.manifests:
         lines.extend(f"- `{manifest}`" for manifest in result.manifests)
     else:
@@ -438,12 +582,13 @@ def render_markdown(result: AuditResult) -> str:
         lines.append("No findings were produced by the implemented checks.")
     else:
         lines.extend([
-            "| Severity | Check | Path | Finding |",
-            "|---|---|---|---|",
+            "| Severity | Confidence | Category | Check | Path | Finding |",
+            "|---|---|---|---|---|---|",
         ])
         for finding in result.findings:
             lines.append(
-                f"| {finding.severity} | `{finding.check_id}` | `{_markdown_escape(finding.path)}` | {_markdown_escape(finding.title)} |"
+                f"| {finding.severity} | {finding.confidence} | `{_markdown_escape(finding.category)}` | "
+                f"`{finding.check_id}` | `{_markdown_escape(finding.path)}` | {_markdown_escape(finding.title)} |"
             )
         lines.append("")
         for finding in result.findings:
@@ -452,6 +597,8 @@ def render_markdown(result: AuditResult) -> str:
                     f"### {finding.check_id} — {finding.title}",
                     "",
                     f"- Severity: **{finding.severity}**",
+                    f"- Confidence: **{finding.confidence}**",
+                    f"- Category: `{finding.category}`",
                     f"- Path: `{finding.path}`",
                     f"- Evidence: {finding.detail}",
                     f"- Remediation: {finding.remediation}",

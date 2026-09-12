@@ -50,6 +50,12 @@ def main(argv: list[str] | None = None) -> int:
             ]
         )
     )
+    print("Capabilities:")
+    for capability in result.capabilities:
+        print(
+            f"  {capability.capability}: {capability.assessment} / "
+            f"{capability.coverage} ({capability.finding_count} findings)"
+        )
     if report_paths:
         print(f"Reports: {report_paths[0]}, {report_paths[1]}")
     print("PASS != SECURITY GUARANTEE")
