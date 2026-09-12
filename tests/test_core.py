@@ -35,6 +35,7 @@ class SecureRepoTests(unittest.TestCase):
             matches = [finding for finding in result.findings if finding.check_id == "SR-SEC-001"]
             self.assertEqual(len(matches), 1)
             self.assertEqual(matches[0].severity, "HIGH")
+            self.assertEqual(matches[0].category, "sensitive-files")
             self.assertEqual(matches[0].path, ".env")
             self.assertEqual(result.exit_code("HIGH"), 2)
 
@@ -70,6 +71,9 @@ jobs:
             result = scan_repository(root)
             ids = {finding.check_id for finding in result.findings}
             self.assertTrue({"SR-GHA-001", "SR-GHA-002", "SR-GHA-003", "SR-GHA-005"}.issubset(ids))
+            gha = next(cap for cap in result.capabilities if cap.capability == "GitHub Actions")
+            self.assertEqual(gha.assessment, "FAIL")
+            self.assertEqual(gha.coverage, "FULL")
 
     def test_full_sha_action_is_not_flagged(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -83,17 +87,47 @@ jobs:
             )
             result = scan_repository(root)
             self.assertFalse(any(finding.check_id == "SR-GHA-005" for finding in result.findings))
+            gha = next(cap for cap in result.capabilities if cap.capability == "GitHub Actions")
+            self.assertEqual(gha.assessment, "PASS")
+            self.assertEqual(gha.coverage, "FULL")
 
-    def test_reports_are_written(self) -> None:
+    def test_missing_workflows_are_not_assessed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._baseline(root)
+            result = scan_repository(root)
+            gha = next(cap for cap in result.capabilities if cap.capability == "GitHub Actions")
+            self.assertEqual(gha.assessment, "NOT_ASSESSED")
+            self.assertEqual(gha.coverage, "UNKNOWN")
+
+    def test_symlink_is_not_followed_by_sensitive_filename_scan(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._baseline(root)
+            target = root / "target.txt"
+            target.write_text("safe fixture\n", encoding="utf-8")
+            link = root / "secret.pem"
+            try:
+                link.symlink_to(target)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks are unavailable in this environment")
+            result = scan_repository(root)
+            self.assertFalse(any(finding.check_id == "SR-SEC-001" for finding in result.findings))
+
+    def test_reports_are_written_with_schema_v2_and_capabilities(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self._baseline(root)
             result = scan_repository(root)
             json_path, markdown_path = write_reports(result, root / "reports")
             payload = json.loads(json_path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["schema_version"], 2)
             self.assertEqual(payload["status"], "PASS")
             self.assertFalse(payload["security_guarantee"])
-            self.assertIn("PASS != SECURITY GUARANTEE", markdown_path.read_text(encoding="utf-8"))
+            self.assertTrue(payload["capabilities"])
+            markdown = markdown_path.read_text(encoding="utf-8")
+            self.assertIn("Capability matrix", markdown)
+            self.assertIn("PASS != SECURITY GUARANTEE", markdown)
 
 
 if __name__ == "__main__":
